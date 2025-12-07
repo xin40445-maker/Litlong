@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苏格兰文学地图 - 在阅读中旅行</title>
+
+    <!-- 复古字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Italiana&display=swap" rel="stylesheet">
+
+    <!-- 地图库 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- 样式 -->
+    <link rel="stylesheet" href="literary-styles.css">
+</head>
+<body class="tourist-mode">
+
+    <!-- 模式切换器 -->
+    <div class="mode-switcher">
+        <button class="mode-btn active" data-mode="tourist">
+            <i class="fas fa-map-marked-alt"></i>
+            <span>游客模式</span>
+        </button>
+        <button class="mode-btn" data-mode="scholar">
+            <i class="fas fa-graduation-cap"></i>
+            <span>学者模式</span>
+        </button>
+    </div>
+
+    <!-- 复古装饰边框 -->
+    <div class="vintage-border top-border"></div>
+    <div class="vintage-border bottom-border"></div>
+    <div class="vintage-border left-border"></div>
+    <div class="vintage-border right-border"></div>
+
+    <!-- 首页 -->
+    <section id="homepage" class="page active">
+        <!-- 复古纸质背景 -->
+        <div class="paper-texture"></div>
+
+        <!-- 标题区域 -->
+        <header class="vintage-header">
+            <div class="ornamental-line top"></div>
+            <h1 class="title-main">
+                <span class="decorative-initial">S</span>cotland
+                <span class="subtitle-line">Literary Journey</span>
+            </h1>
+            <p class="tagline">在文字中漫步，于地图上旅行</p>
+            <div class="ornamental-line bottom"></div>
+        </header>
+
+        <!-- 两大核心功能入口 -->
+        <div class="main-features">
+            <!-- 发现附近文学地点 -->
+            <div class="feature-card map-feature">
+                <div class="card-frame">
+                    <div class="compass-rose">
+                        <i class="fas fa-compass"></i>
+                    </div>
+                    <h2>发现附近的文学地点</h2>
+                    <p class="card-description">
+                        探索19世纪苏格兰作家笔下的真实场景，
+                        从爱丁堡的老城石板路到高地的荒原，
+                        每一处都留下了文学的足迹
+                    </p>
+
+                    <!-- 快速统计 -->
+                    <div class="quick-stats">
+                        <div class="stat-item">
+                            <span class="number" id="home-locations-count">1,500+</span>
+                            <span class="label">文学地点</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="number" id="home-works-count">200+</span>
+                            <span class="label">经典作品</span>
+                        </div>
+                    </div>
+
+                    <button class="vintage-button primary" data-goto="map">
+                        <span>开始探索</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 虚拟书架 -->
+            <div class="feature-card library-feature">
+                <div class="card-frame">
+                    <div class="book-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h2>虚拟书架</h2>
+                    <p class="card-description">
+                        沉浸于19世纪的文学世界，
+                        翻阅经典之作，在字里行间
+                        发现那些被提及的迷人地点
+                    </p>
+
+                    <!-- 推荐书籍预览 -->
+                    <div class="featured-books">
+                        <div class="mini-book">
+                            <div class="book-spine"></div>
+                            <div class="book-title">Varieties in Prose</div>
+                        </div>
+                        <div class="mini-book">
+                            <div class="book-spine"></div>
+                            <div class="book-title">Braes o' Balquhidder</div>
+                        </div>
+                        <div class="mini-book">
+                            <div class="book-spine"></div>
+                            <div class="book-title">Tour in Tartan-Land</div>
+                        </div>
+                    </div>
+
+                    <button class="vintage-button secondary" data-goto="library">
+                        <span>进入书架</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 时代背景 -->
+        <div class="era-context">
+            <div class="context-ornament left"></div>
+            <p class="context-text">
+                "维多利亚时代的苏格兰，文学与地理交织成一幅壮丽的画卷"
+            </p>
+            <div class="context-ornament right"></div>
+        </div>
+    </section>
+
+    <!-- 地图页面 -->
+    <section id="map-page" class="page">
+        <div class="page-header">
+            <button class="back-button" data-goto="home">
+                <i class="fas fa-arrow-left"></i> 返回首页
+            </button>
+            <h1 class="page-title">文学地图</h1>
+            <div class="view-controls">
+                <button class="control-btn" id="toggle-clusters">
+                    <i class="fas fa-layer-group"></i>
+                    <span>聚合</span>
+                </button>
+                <button class="control-btn" id="filter-high-freq">
+                    <i class="fas fa-fire"></i>
+                    <span>高频地点</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <!-- 手绘风格地图 -->
+            <div id="literature-map" class="vintage-map"></div>
+
+            <!-- 地图图例 -->
+            <div class="map-legend">
+                <h3>图例说明</h3>
+                <div class="legend-items">
+                    <div class="legend-item high-freq">
+                        <div class="marker-sample vintage-marker-high"></div>
+                        <span>高频地点 (50+次)</span>
+                    </div>
+                    <div class="legend-item medium-freq">
+                        <div class="marker-sample vintage-marker-medium"></div>
+                        <span>常见地点 (10-50次)</span>
+                    </div>
+                    <div class="legend-item low-freq">
+                        <div class="marker-sample vintage-marker-low"></div>
+                        <span>偶见地点 (1-10次)</span>
+                    </div>
+                </div>
+
+                <!-- 地点搜索 -->
+                <div class="location-search">
+                    <input type="text"
+                           id="map-search"
+                           placeholder="搜索地点..."
+                           class="vintage-input">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+
+            <!-- 地点详情卡片 -->
+            <div id="location-detail" class="location-detail-card">
+                <!-- 动态生成 -->
+            </div>
+        </div>
+
+        <!-- 筛选面板 -->
+        <div class="filter-panel">
+            <h3>筛选条件</h3>
+
+            <!-- 作者筛选 -->
+            <div class="filter-group">
+                <label>作者</label>
+                <select id="author-filter" class="vintage-select">
+                    <option value="">全部作者</option>
+                </select>
+            </div>
+
+            <!-- 年代筛选 -->
+            <div class="filter-group">
+                <label>年代</label>
+                <div class="year-slider-container">
+                    <input type="range"
+                           id="year-filter"
+                           min="1850"
+                           max="1900"
+                           value="1875"
+                           class="vintage-slider">
+                    <div class="year-display">
+                        <span id="selected-year">1875</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 类型筛选 -->
+            <div class="filter-group">
+                <label>文学类型</label>
+                <div class="genre-chips" id="genre-filter">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <button class="vintage-button small" id="apply-filters">应用筛选</button>
+            <button class="vintage-button small outline" id="reset-filters">重置</button>
+        </div>
+    </section>
+
+    <!-- 虚拟书架页面 -->
+    <section id="library-page" class="page">
+        <div class="page-header">
+            <button class="back-button" data-goto="home">
+                <i class="fas fa-arrow-left"></i> 返回首页
+            </button>
+            <h1 class="page-title">虚拟书架</h1>
+            <div class="view-controls">
+                <button class="control-btn active" id="view-bookshelf">
+                    <i class="fas fa-th"></i>
+                    <span>书架视图</span>
+                </button>
+                <button class="control-btn" id="view-timeline">
+                    <i class="fas fa-stream"></i>
+                    <span>时间线</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 书架视图 -->
+        <div class="bookshelf-view active" id="bookshelf-container">
+            <div class="wooden-shelf">
+                <!-- 动态生成书籍 -->
+            </div>
+        </div>
+
+        <!-- 时间线视图 -->
+        <div class="timeline-view" id="timeline-container">
+            <div class="timeline-axis">
+                <!-- 动态生成时间线 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 书籍阅读器 -->
+    <div id="book-reader" class="book-reader-modal">
+        <div class="reader-container">
+            <button class="close-reader">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <div class="book-wrapper">
+                <div class="book-cover-page">
+                    <div class="cover-ornament top"></div>
+                    <h2 class="book-title"></h2>
+                    <p class="book-author"></p>
+                    <p class="book-year"></p>
+                    <div class="cover-ornament bottom"></div>
+                </div>
+
+                <div class="book-content-pages">
+                    <!-- 左页 -->
+                    <div class="page left-page">
+                        <div class="page-number left"></div>
+                        <div class="page-text" id="left-page-text"></div>
+                    </div>
+
+                    <!-- 装订线 -->
+                    <div class="book-spine-center"></div>
+
+                    <!-- 右页 -->
+                    <div class="page right-page">
+                        <div class="page-text" id="right-page-text"></div>
+                        <div class="page-number right"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 阅读控制 -->
+            <div class="reader-controls">
+                <button class="page-turn prev" id="prev-page">
+                    <i class="fas fa-chevron-left"></i>
+                    上一页
+                </button>
+                <span class="page-info">
+                    第 <span id="current-page">1</span> / <span id="total-pages">10</span> 页
+                </span>
+                <button class="page-turn next" id="next-page">
+                    下一页
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- 高亮地点列表 -->
+            <div class="highlighted-locations">
+                <h4>本页提及的地点</h4>
+                <div id="page-locations">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学者模式特有面板 -->
+    <div class="scholar-panel">
+        <div class="panel-tabs">
+            <button class="tab active" data-tab="data">数据分析</button>
+            <button class="tab" data-tab="citation">引用</button>
+            <button class="tab" data-tab="export">导出</button>
+        </div>
+
+        <div class="tab-content active" id="data-tab">
+            <canvas id="analysis-chart"></canvas>
+        </div>
+
+        <div class="tab-content" id="citation-tab">
+            <textarea class="citation-text" readonly></textarea>
+            <button class="vintage-button small">复制引用</button>
+        </div>
+
+        <div class="tab-content" id="export-tab">
+            <button class="export-btn">
+                <i class="fas fa-file-csv"></i> 导出 CSV
+            </button>
+            <button class="export-btn">
+                <i class="fas fa-file-excel"></i> 导出 Excel
+            </button>
+            <button class="export-btn">
+                <i class="fas fa-file-pdf"></i> 导出 PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- 音效（翻书声） -->
+    <audio id="page-turn-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" type="audio/wav">
+    </audio>
+
+    <!-- 脚本 -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="literary-app.js"></script>
+</body>
+</html>

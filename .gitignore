@@ -15,7 +15,7 @@ styles-advanced.css
 test-data.html
 
 # 忽略基础版本文件
-index.html
+# index.html  # 注释掉，GitHub Pages 需要 index.html
 app.js
 map.js
 styles.css
