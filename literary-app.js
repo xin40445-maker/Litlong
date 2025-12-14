@@ -60,57 +60,85 @@ function parseCSV(csvText) {
 // ========== 数据加载 ==========
 async function loadAllData() {
     try {
-        console.log('开始加载所有数据...');
+        console.log('开始加载合并数据...');
 
-        // 加载文档数据
-        const docsResponse = await fetch('documents_genre.csv');
-        if (!docsResponse.ok) {
-            throw new Error(`无法加载 documents_genre.csv (状态: ${docsResponse.status})`);
+        // 加载合并后的数据文件
+        const mergedResponse = await fetch('mergedLitlong_forgenre.csv');
+        if (!mergedResponse.ok) {
+            throw new Error(`无法加载 mergedLitlong_forgenre.csv (状态: ${mergedResponse.status})`);
         }
-        const docsText = await docsResponse.text();
-        const rawDocs = parseCSV(docsText);
+        const mergedText = await mergedResponse.text();
+        const mergedData = parseCSV(mergedText);
 
-        // 按document_id分组合并genres
-        const groupedDocs = {};
-        rawDocs.forEach(item => {
-            const id = item.document_id;
-            if (!groupedDocs[id]) {
-                groupedDocs[id] = {
-                    ...item,
-                    genres: [item.genre]
+        console.log(`✓ 加载 ${mergedData.length} 条合并数据记录`);
+
+        // 提取文档信息（按 document_id 分组）
+        const docsMap = {};
+        mergedData.forEach(row => {
+            const docId = row.document_id;
+            if (!docsMap[docId]) {
+                docsMap[docId] = {
+                    document_id: docId,
+                    title: row.title,
+                    forename: row.forename,
+                    surname: row.surname,
+                    pubyear: row.pubyear,
+                    gender: row.gender,
+                    genres: []
                 };
-                AppData.authors.add(`${item.forename} ${item.surname}`.trim());
-            } else {
-                if (!groupedDocs[id].genres.includes(item.genre)) {
-                    groupedDocs[id].genres.push(item.genre);
-                }
+                AppData.authors.add(`${row.forename} ${row.surname}`.trim());
             }
-            AppData.genres.add(item.genre);
+            // 添加类型（避免重复）
+            if (row.genre && !docsMap[docId].genres.includes(row.genre)) {
+                docsMap[docId].genres.push(row.genre);
+                AppData.genres.add(row.genre);
+            }
+        });
+        AppData.documents = Object.values(docsMap);
+        console.log(`✓ 提取 ${AppData.documents.length} 个文档`);
+
+        // 提取地点信息（按 location_id 分组）
+        const locsMap = {};
+        mergedData.forEach(row => {
+            const locId = row.location_id;
+            if (!locsMap[locId]) {
+                locsMap[locId] = {
+                    id: locId,
+                    text: row.text,
+                    lat: row.lat,
+                    lon: row.lon,
+                    mentions: []
+                };
+            }
+            // 记录提及信息
+            locsMap[locId].mentions.push({
+                id: row.id,
+                text_x: row.text_x,
+                document_id: row.document_id
+            });
         });
 
-        AppData.documents = Object.values(groupedDocs);
-        console.log(`✓ 加载 ${AppData.documents.length} 个文档`);
+        // 转换为数组并添加统计信息
+        AppData.locations = Object.values(locsMap).map(loc => {
+            const uniqueDocs = new Set(loc.mentions.map(m => m.document_id));
+            return {
+                id: loc.id,
+                text: loc.text,
+                lat: loc.lat,
+                lon: loc.lon,
+                mentionCount: loc.mentions.length,
+                documentCount: uniqueDocs.size,
+                mentionTexts: loc.mentions.slice(0, 5).map(m => m.text_x)
+            };
+        }).filter(loc => loc.lat && loc.lon && !isNaN(parseFloat(loc.lat)));
 
-        // 加载地点数据
-        const locsResponse = await fetch('locations.csv');
-        if (!locsResponse.ok) {
-            throw new Error(`无法加载 locations.csv (状态: ${locsResponse.status})`);
-        }
-        const locsText = await locsResponse.text();
-        AppData.locations = parseCSV(locsText);
-        console.log(`✓ 加载 ${AppData.locations.length} 个地点`);
+        // 按提及次数排序
+        AppData.locations.sort((a, b) => b.mentionCount - a.mentionCount);
+        console.log(`✓ 提取 ${AppData.locations.length} 个地点`);
+        console.log(`✓ 最多提及: ${AppData.locations[0]?.text} (${AppData.locations[0]?.mentionCount}次)`);
 
-        // 加载地点提及数据
-        const mentionsResponse = await fetch('locationmentions.csv');
-        if (!mentionsResponse.ok) {
-            throw new Error(`无法加载 locationmentions.csv (状态: ${mentionsResponse.status})`);
-        }
-        const mentionsText = await mentionsResponse.text();
-        AppData.locationMentions = parseCSV(mentionsText);
-        console.log(`✓ 加载 ${AppData.locationMentions.length} 条地点提及`);
-
-        // 计算地点统计
-        calculateLocationStats();
+        // 保存原始合并数据用于其他功能
+        AppData.mergedData = mergedData;
 
         // 初始化UI
         initializeApp();
@@ -135,46 +163,11 @@ async function loadAllData() {
             errorMessage += '❌ 不要直接双击打开HTML文件！';
         } else {
             errorMessage += error.message + '\n\n';
-            errorMessage += '请确保所有CSV文件存在于项目目录中。';
+            errorMessage += '请确保 mergedLitlong_forgenre.csv 文件存在于项目目录中。';
         }
 
         alert(errorMessage);
     }
-}
-
-// ========== 计算地点统计 ==========
-function calculateLocationStats() {
-    const locationStats = {};
-
-    AppData.locationMentions.forEach(mention => {
-        const locId = mention.location_id;
-        if (!locationStats[locId]) {
-            locationStats[locId] = {
-                count: 0,
-                documents: new Set(),
-                texts: []
-            };
-        }
-        locationStats[locId].count++;
-        locationStats[locId].documents.add(mention.document_id);
-        locationStats[locId].texts.push(mention.text);
-    });
-
-    // 合并到locations数据
-    AppData.locations = AppData.locations.map(loc => {
-        const stats = locationStats[loc.id] || { count: 0, documents: new Set(), texts: [] };
-        return {
-            ...loc,
-            mentionCount: stats.count,
-            documentCount: stats.documents.size,
-            mentionTexts: stats.texts.slice(0, 5) // 最多5个示例
-        };
-    }).filter(loc => loc.lat && loc.lon && !isNaN(parseFloat(loc.lat)));
-
-    // 按提及次数排序
-    AppData.locations.sort((a, b) => b.mentionCount - a.mentionCount);
-
-    console.log(`✓ 统计完成，最多提及: ${AppData.locations[0]?.text} (${AppData.locations[0]?.mentionCount}次)`);
 }
 
 // ========== 初始化应用 ==========
